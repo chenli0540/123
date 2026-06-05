@@ -1,0 +1,1055 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>剧本工坊 - 小说转剧本 · AI 智能转换</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎬</text></svg>">
+    <link rel="stylesheet" href="css/style.css">
+    <!-- html-ppt 主题系统：初始主题由 style.css :root 提供，按 T 键循环切换 -->
+    <link rel="stylesheet" id="theme-link" href="ppt/themes/minimal-white.css" disabled>
+</head>
+<body data-themes="minimal-white,editorial-serif,soft-pastel,tokyo-night,catppuccin-mocha,dracula,sunset-warm,aurora" data-theme-base="ppt/themes/">
+
+    <!-- ===== 背景装饰 ===== -->
+    <div class="bg-decoration">
+        <div class="bg-circle"></div>
+        <div class="bg-circle"></div>
+        <div class="bg-circle"></div>
+    </div>
+
+    <!-- ===== 顶部导航 ===== -->
+    <nav class="nav-bar">
+        <a class="nav-logo" href="#" onclick="return false">
+            <div class="nav-logo-icon">剧</div>
+            <span class="nav-logo-text">剧本工坊</span>
+            <span class="nav-logo-badge">v2.0</span>
+        </a>
+
+        <div class="nav-tabs">
+            <div class="nav-tab active" data-page="convert">
+                <span class="nav-tab-icon">📝</span>
+                <span class="nav-tab-label">小说转剧本</span>
+                <span class="new-badge">AI</span>
+            </div>
+            <div class="nav-tab" data-page="template">
+                <span class="nav-tab-icon">📖</span>
+                <span class="nav-tab-label">剧本模板</span>
+            </div>
+            <div class="nav-tab" data-page="help">
+                <span class="nav-tab-icon">❓</span>
+                <span class="nav-tab-label">使用帮助</span>
+            </div>
+        </div>
+
+        <div class="nav-right">
+            <button class="nav-btn" title="设置" id="navSettingsBtn" type="button" onclick="document.getElementById('settingsModal').classList.add('active')">⚙️</button>
+            <button class="nav-btn" title="深色模式" id="darkModeBtn" type="button">🌓</button>
+        </div>
+    </nav>
+
+    <!-- ===== 子导航 ===== -->
+    <div class="sub-nav">
+        <div class="sub-nav-inner">
+            <span class="sub-nav-item active" data-sub="convert">📄 智能转换</span>
+            <span class="sub-nav-item" data-sub="chars">🎭 角色管理 <span class="new-badge" id="charCountBadge" style="display:none;background:var(--bili-blue);">0</span></span>
+            <span class="sub-nav-item" data-sub="stats">📊 剧本统计</span>
+            <span class="sub-nav-item" data-sub="export">💾 导入/导出</span>
+            <span class="sub-nav-item" data-sub="files">📁 文件管理</span>
+            <span class="sub-nav-item" data-sub="compare">📑 对比模式</span>
+            <span class="sub-nav-item" data-sub="present">📊 剧本展示</span>
+            <span style="flex:1"></span>
+            <span style="font-size:12px;color:var(--text-tertiary);display:flex;align-items:center;gap:6px;">
+                <span>⌨️ Ctrl+Enter 快速转换</span>
+            </span>
+        </div>
+    </div>
+
+    <!-- ===== Toast 容器 ===== -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- ===== 主容器 ===== -->
+    <div class="main-container">
+
+        <!-- ===== 左侧：输入面板 ===== -->
+        <div class="panel">
+            <div class="panel-header">
+                <div class="panel-title">
+                    <span class="panel-title-icon">📝</span>
+                    输入小说原文
+                    <span class="panel-title-tag">粘贴或直接输入</span>
+                </div>
+                <div class="panel-actions">
+                    <button class="btn btn-outline btn-sm" id="clearBtn">🗑️ 清空</button>
+                </div>
+            </div>
+
+            <div class="panel-body input-area">
+                <textarea class="novel-input" id="novelInput"
+                    placeholder="在此粘贴你的小说内容……&#10;&#10;支持任意叙事文本，系统将自动识别：&#10;• 场景切换（时间/地点变化）&#10;• 角色对话（含双引号内容）&#10;• 动作描写&#10;• 环境描述&#10;&#10;💡 试试下方样例，或直接 Ctrl+Enter 快速转换！"
+                    rows="14"></textarea>
+
+                <!-- 输入统计 -->
+                <div class="input-stats">
+                    <div class="input-stat">
+                        <span>📝 字数</span>
+                        <span class="input-stat-value" id="charCount">0</span>
+                    </div>
+                    <div class="input-stat">
+                        <span>📃 段落</span>
+                        <span class="input-stat-value" id="paraCount">0</span>
+                    </div>
+                    <div class="input-stat">
+                        <span>🎬 预计场次</span>
+                        <span class="input-stat-value" id="sceneCount">-</span>
+                    </div>
+                </div>
+
+                <!-- 样例快速加载 -->
+                <div class="sample-area">
+                    <div class="sample-area-title">📌 快速加载样例文本</div>
+                    <div class="sample-btns">
+                        <button class="sample-btn" data-sample="wuxia">🗡️ 武侠 · 恩怨</button>
+                        <button class="sample-btn" data-sample="romance">💕 言情 · 重逢</button>
+                        <button class="sample-btn" data-sample="scifi">🚀 科幻 · 危机</button>
+                    </div>
+                </div>
+
+                <!-- 操作按钮 -->
+                <div class="input-actions">
+                    <button class="btn btn-pink btn-lg" id="convertBtn">✨ 开始转换</button>
+
+                    <!-- AI 模式切换 -->
+                    <label class="ai-toggle-label">
+                        <input type="checkbox" id="aiToggle">
+                        <span>🤖 AI 模式</span>
+                    </label>
+
+                    <button class="ai-settings-toggle" id="apiSettingsBtn" type="button" onclick="document.getElementById('apiSettingsPanel').classList.toggle('active')">🔑 API 设置</button>
+                </div>
+
+                <!-- API 设置面板（纯 API，不混杂显示设置） -->
+                <div class="ai-settings-panel" id="apiSettingsPanel">
+                    <div style="font-size:13px;font-weight:600;margin-bottom:10px;color:var(--text-secondary);">🤖 API 设置</div>
+                    <div class="form-group">
+                        <label class="form-label">API Key <small>（OpenAI 兼容接口）</small></label>
+                        <input type="password" class="form-input" id="apiKeyInput" placeholder="sk-..." value="">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">API 地址</label>
+                        <input type="url" class="form-input" id="apiEndpointInput" value="https://api.openai.com/v1/chat/completions">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">模型</label>
+                        <input type="text" class="form-input" id="apiModelInput" value="gpt-4o-mini">
+                    </div>
+                    <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                        <button class="preset-btn" data-preset="deepseek">DeepSeek</button>
+                        <button class="preset-btn" data-preset="openai">OpenAI</button>
+                        <button class="preset-btn" data-preset="qwen">通义千问</button>
+                    </div>
+                    <div style="display:flex;gap:8px;margin-top:10px;">
+                        <button class="btn btn-outline btn-sm" id="testApiBtn" type="button">🔌 测试连接</button>
+                        <button class="btn btn-outline btn-sm" id="closeApiSettingsBtn" type="button">✕ 关闭</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== 右侧：输出面板 ===== -->
+        <div class="panel">
+            <div class="panel-header">
+                <div class="panel-title">
+                    <span class="panel-title-icon">🎬</span>
+                    剧本 YAML 输出
+                    <span class="panel-title-tag" style="background:linear-gradient(135deg,var(--bili-blue),var(--bili-blue-dark))">可编辑</span>
+                </div>
+                <div class="panel-actions output-toolbar">
+                    <div class="format-select">
+                        <span class="format-option active" data-format="yaml">YAML</span>
+                        <span class="format-option" data-format="json">JSON</span>
+                        <span class="format-option" data-format="txt">TXT</span>
+                    </div>
+                    <button class="btn btn-outline btn-sm" id="copyBtn">📋 复制</button>
+                    <button class="btn btn-blue btn-sm" id="exportBtn">📥 导出</button>
+                </div>
+            </div>
+
+            <div class="panel-body" style="position:relative;">
+                <!-- 加载遮罩 -->
+                <div class="loading-overlay" id="loadingOverlay">
+                    <div class="loading-spinner"></div>
+                    <div class="loading-text" id="loadingText">正在分析小说文本...</div>
+                    <div class="loading-subtext">智能识别场景、角色、对话、动作</div>
+                    <div class="loading-progress">
+                        <div class="loading-progress-bar"></div>
+                    </div>
+                </div>
+
+                <!-- 输出统计 -->
+                <div class="output-stats" id="outputStats" style="display:none"></div>
+
+                <div class="characters-section" id="charactersSection" style="display:none">
+                    <div class="characters-header">
+                        <span class="characters-title">🎭 识别到的角色</span>
+                    </div>
+                    <div class="character-tags" id="characterTags"></div>
+                </div>
+
+                <!-- 场景预览 -->
+                <div class="scene-preview" id="scenePreview"></div>
+
+                <!-- YAML 编辑器 -->
+                <textarea class="yaml-editor" id="yamlOutput"
+                    placeholder="点击「✨ 开始转换」生成剧本 YAML&#10;&#10;你也可以直接在此编辑 YAML 内容，&#10;修改后导出即可保存更改。"
+                    rows="16" spellcheck="false"></textarea>
+
+                <!-- 空状态（初始时显示） -->
+                <div class="empty-state" id="emptyState">
+                    <div class="empty-state-icon">🎬</div>
+                    <div class="empty-state-title">等待你的故事</div>
+                    <div class="empty-state-desc">
+                        在左侧输入小说原文，点击「开始转换」即可生成专业剧本 YAML 格式。<br>
+                        支持 AI 智能转换（需配置 API Key）和<strong>本地智能引擎</strong>两种模式。
+                        <br><br>
+                        <span style="color:var(--bili-pink);font-weight:500;">✨ 完全免费 · 在线编辑 · 一键导出</span>
+                    </div>
+                </div>
+
+                <!-- 文件管理面板（初始隐藏） -->
+                <div class="file-manager" id="fileManager" style="display:none;">
+                    <div class="file-mgr-header">
+                        <div class="file-mgr-title">📁 小说文库</div>
+                        <div class="file-mgr-actions">
+                            <button class="btn btn-pink btn-sm" id="addNovelBtn">📂 导入小说</button>
+                        </div>
+                    </div>
+                    <div class="file-mgr-stats" id="fileMgrStats">
+                        <div class="file-stat-item">
+                            <span class="file-stat-value" id="novelCount">0</span>
+                            <span class="file-stat-label">本小说</span>
+                        </div>
+                        <div class="file-stat-item">
+                            <span class="file-stat-value" id="chapterCount">0</span>
+                            <span class="file-stat-label">总章节</span>
+                        </div>
+                        <div class="file-stat-item">
+                            <span class="file-stat-value" id="totalWordCount">0</span>
+                            <span class="file-stat-label">总字数</span>
+                        </div>
+                    </div>
+                    <div class="file-mgr-list" id="fileMgrList">
+                        <div class="file-mgr-empty">
+                            <div class="file-mgr-empty-icon">📚</div>
+                            <div>还没有小说，点击「导入小说」开始</div>
+                            <div style="font-size:12px;color:var(--text-tertiary);margin-top:6px;">
+                                支持 .txt 格式，可多章管理
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 对照视图（初始隐藏） -->
+                <div class="compare-view" id="compareView" style="display:none;">
+                    <div class="compare-view-header">
+                        <div class="compare-view-title">📑 原文 ↔ 剧本 对照</div>
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <label class="sep-toggle">
+                                <input type="checkbox" id="sepToggle" checked>
+                                <span>🔹 分隔线</span>
+                            </label>
+                            <button class="btn btn-outline btn-sm" id="fsCompareOpen" style="font-size:11px;" onclick="window.ScreenplayStudio && ScreenplayStudio.openFullscreenCompare && ScreenplayStudio.openFullscreenCompare();">⛶ 全屏</button>
+                        </div>
+                    </div>
+                    <div class="compare-view-body">
+                        <div class="compare-panel" id="compareOriginal">
+                            <div class="compare-panel-label">📖 原文</div>
+                            <div class="compare-scroll" id="compareScrollLeft"></div>
+                        </div>
+                        <div class="compare-divider"></div>
+                        <div class="compare-panel" id="compareScreenplay">
+                            <div class="compare-panel-label">🎬 剧本</div>
+                            <div class="compare-scroll" id="compareScrollRight"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 剧本展示视图（初始隐藏） -->
+                <div class="presentation-view" id="presentationView" style="display:none;">
+                    <div class="presentation-view-header">
+                        <div class="presentation-view-title">📊 剧本展示</div>
+                        <div style="display:flex;gap:8px;align-items:center;">
+                            <span style="font-size:12px;color:var(--text-tertiary);">将剧本转为 HTML 幻灯片</span>
+                            <button class="btn btn-pink btn-sm" id="openPresentationBtn">🎬 打开展示</button>
+                        </div>
+                    </div>
+                    <div class="presentation-view-body">
+                        <div class="presentation-info">
+                            <div class="presentation-info-icon">📊</div>
+                            <div class="presentation-info-title">HTML 幻灯片展示</div>
+                            <div class="presentation-info-desc">
+                                将剧本每场转换为独立幻灯片，支持：
+                            </div>
+                            <div class="presentation-features">
+                                <div class="presentation-feature"><span class="pf-icon">🎨</span><span><strong>9 种主题</strong> — 按 T 键随意切换</span></div>
+                                <div class="presentation-feature"><span class="pf-icon">⌨️</span><span><strong>键盘导航</strong> — ← → 翻页 · F 全屏 · O 概览</span></div>
+                                <div class="presentation-feature"><span class="pf-icon">🎭</span><span><strong>角色介绍</strong> — 自动生成角色卡片页</span></div>
+                                <div class="presentation-feature"><span class="pf-icon">📊</span><span><strong>统计总览</strong> — 场次/对话/角色数据一目了然</span></div>
+                                <div class="presentation-feature"><span class="pf-icon">📝</span><span><strong>逐字稿</strong> — 按 S 键查看演讲备注</span></div>
+                            </div>
+                            <div class="presentation-preview">
+                                <div class="presentation-preview-item" data-theme="minimal-white" style="background:#fff;color:#333;">极简白</div>
+                                <div class="presentation-preview-item" data-theme="tokyo-night" style="background:#1a1b26;color:#a9b1d6;">东京夜</div>
+                                <div class="presentation-preview-item" data-theme="soft-pastel" style="background:linear-gradient(135deg,#fce4ec,#e8eaf6);color:#5d4037;">柔和</div>
+                                <div class="presentation-preview-item" data-theme="aurora" style="background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;">极光</div>
+                                <div class="presentation-preview-item" data-theme="sunset-warm" style="background:linear-gradient(135deg,#ff9a9e,#fad0c4);color:#5d4037;">日落</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ===== 版本信息 ===== -->
+    <div class="version-tag">🎬 剧本工坊 v2.0 · 致敬每一位创作者</div>
+
+    <!-- ===== 角色管理模态框 ===== -->
+    <div class="modal-overlay" id="charMgrModal">
+        <div class="modal" style="max-width:700px;max-height:85vh;">
+            <div class="modal-header">
+                <div class="modal-title">🎭 角色管理</div>
+                <button class="modal-close" id="charMgrClose">&times;</button>
+            </div>
+            <div class="modal-body" id="charMgrBody">
+                <!-- 由 JS 动态填充 -->
+                <div class="char-hint-inline" id="charMgrHint">
+                    💡 先转换小说内容，角色会自动识别出现在这里
+                </div>
+                <div class="char-mgr-grid" id="charMgrGrid"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" id="charMgrCancel">取消</button>
+                <button class="btn btn-pink" id="charMgrSave">保存更改</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== 全屏对照模式 ===== -->
+    <div class="fullscreen-compare-overlay" id="fullscreenCompare">
+        <div class="fullscreen-compare-header">
+            <div class="fullscreen-compare-title">
+                <span>📑 全文对照</span>
+                <span style="font-size:11px;color:var(--text-tertiary);font-weight:400;">滚动同步 · 沉浸浏览</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;">
+                <span id="fsCompareStats" style="font-size:11px;color:var(--text-tertiary);"></span>
+                <button class="fullscreen-compare-close" id="fsCompareClose">&times;</button>
+            </div>
+        </div>
+        <div class="fullscreen-compare-body" id="fsCompareBody">
+            <div class="fullscreen-panel">
+                <div class="fullscreen-panel-label">📖 原文</div>
+                <div class="fullscreen-panel-content" id="fsCompareLeft"></div>
+            </div>
+            <div class="fullscreen-panel">
+                <div class="fullscreen-panel-label">🎬 剧本</div>
+                <div class="fullscreen-panel-content" id="fsCompareRight"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== 设置面板（独立 Sheet） ===== -->
+    <div class="modal-overlay" id="settingsModal">
+        <div class="modal" style="max-width:560px;">
+            <div class="modal-header">
+                <div class="modal-title">🎨 显示设置</div>
+                <button class="modal-close" id="settingsModalClose">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">对照字体大小</label>
+                    <div style="display:flex;align-items:center;gap:12px;">
+                        <input type="range" id="fontSizeInput" min="12" max="28" value="15" style="flex:1;accent-color:var(--bili-pink);">
+                        <span id="fontSizeValue" style="font-size:13px;font-weight:600;min-width:40px;">15px</span>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">字体</label>
+                    <select class="form-input" id="fontFamilySelect">
+                        <option value="">默认</option>
+                        <option value="'PingFang SC','Microsoft YaHei',sans-serif">苹方/微软雅黑</option>
+                        <option value="'Noto Serif SC','SimSun',serif">宋体</option>
+                        <option value="'Source Han Serif SC','STSong',serif">思源宋体</option>
+                        <option value="'Fira Code','Consolas',monospace">等宽字体</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">页面主题 <small style="font-weight:400;color:var(--text-3);">（按 T 键循环切换）</small></label>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                        <div class="theme-option active" data-theme="minimal-white" style="background:#ffffff;border-color:#d0d0d0;color:#333;">☀️ 极简白</div>
+                        <div class="theme-option" data-theme="soft-pastel" style="background:linear-gradient(135deg,#fce4ec,#e8eaf6);border-color:#ce93d8;color:#5d4037;">🌸 柔和</div>
+                        <div class="theme-option" data-theme="editorial-serif" style="background:#faf6f0;border-color:#d4a574;color:#5d4a36;">📜 暖黄</div>
+                        <div class="theme-option" data-theme="tokyo-night" style="background:#1a1b26;border-color:#565f89;color:#a9b1d6;">🌃 东京夜</div>
+                        <div class="theme-option" data-theme="catppuccin-mocha" style="background:#1e1e2e;border-color:#cba6f7;color:#cdd6f4;">☕ 摩卡</div>
+                        <div class="theme-option" data-theme="aurora" style="background:linear-gradient(135deg,#667eea,#764ba2);border-color:#5b3a8c;color:#fff;">🌈 极光</div>
+                        <div class="theme-option" data-theme="sunset-warm" style="background:linear-gradient(135deg,#ff9a9e,#fad0c4);border-color:#e66767;color:#5d4037;">🌅 日落</div>
+                    </div>
+                </div>
+                <div class="form-group" style="margin-bottom:0;">
+                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px;font-weight:600;">
+                        <input type="checkbox" id="autoSplitToggle" style="accent-color:var(--bili-pink);width:16px;height:16px;">
+                        超过 5 幕自动拆分文件
+                    </label>
+                    <p style="font-size:12px;color:var(--text-tertiary);margin-top:4px;padding-left:24px;">导出时超过 5 幕的剧本自动拆分为多个文件</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-pink" id="settingsModalDone">✔ 完成</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== 隐藏的文件选择器 ===== -->
+    <input type="file" id="fileInput" accept=".txt" style="display:none">
+
+    <!-- ===== 脚本 ===== -->
+    <script src="js/app.js"></script>
+    <script>
+        // ===== 额外页面交互 =====
+        (function() {
+            'use strict';
+
+            const $ = id => document.getElementById(id);
+            const $$ = sel => document.querySelectorAll(sel);
+
+            // ---- 空状态控制 ----
+            const yamlOutput = $('yamlOutput');
+            const emptyState = $('emptyState');
+
+            function toggleEmpty() {
+                if (emptyState) {
+                    emptyState.style.display = yamlOutput.value.trim() ? 'none' : 'flex';
+                }
+            }
+            yamlOutput.addEventListener('input', toggleEmpty);
+            toggleEmpty();
+
+            // ---- 角色管理变量 ----
+            const charMgrModal = $('charMgrModal');
+            const charMgrGrid = $('charMgrGrid');
+            const charMgrHint = $('charMgrHint');
+            const charMgrBody = $('charMgrBody');
+
+            // ---- 导航标签切换 ----
+            $$('.nav-tab').forEach(tab => {
+                tab.addEventListener('click', function() {
+                    $$('.nav-tab').forEach(t => t.classList.remove('active'));
+                    this.classList.add('active');
+
+                    const page = this.dataset.page;
+                    if (page === 'help') showHelp();
+                    else if (page === 'template') showTemplate();
+                });
+            });
+
+            // ---- 副导航切换 + 角色管理 ----
+            const subNavItems = $$('.sub-nav-item');
+            subNavItems.forEach(item => {
+                item.addEventListener('click', function() {
+                    subNavItems.forEach(i => i.classList.remove('active'));
+                    this.classList.add('active');
+                    const sub = this.dataset.sub;
+                    if (sub === 'compare') toggleCompareView();
+                    else if (sub === 'present') togglePresentView();
+                    else if (sub === 'files') toggleFileMgr();
+                    else if (sub === 'chars') openCharMgr();
+                    else hideCompareView();
+                });
+            });
+
+            // ---- 深色模式 ----
+            $('darkModeBtn')?.addEventListener('click', function() {
+                const isDark = document.documentElement.style.filter === 'invert(1) hue-rotate(180deg)';
+                document.documentElement.style.filter = isDark ? '' : 'invert(1) hue-rotate(180deg)';
+                this.textContent = isDark ? '🌓' : '☀️';
+            });
+
+            // ---- 显示使用帮助 ----
+            function showHelp() {
+                const input = $('novelInput');
+                if (!input) return;
+                input.value = `【剧本工坊 · 使用指南】
+
+📖 什么是剧本 YAML 格式？
+
+剧本 YAML 是一种结构化的剧本格式，将小说文本转化为清晰的场次、对话、动作和描述，方便编剧和创作者编辑和分享。
+
+🎯 如何使用
+
+1. 在左侧输入框中粘贴你的小说文本
+2. 点击「开始转换」按钮（或按 Ctrl+Enter）
+3. 右侧自动生成结构化的剧本 YAML
+4. 可以在 YAML 编辑器中直接修改
+5. 点击「导出」保存为文件
+
+🤖 AI 模式
+
+开启 AI 模式可以获得更精准的转换效果：
+• 更准确的场景划分
+• 更合理的角色识别
+• 更细腻的情绪标注
+• 需要配置 OpenAI 兼容的 API Key
+
+📋 支持格式
+
+• YAML — 完整的结构化格式，适合进一步编辑
+• JSON — 适合程序化处理
+• TXT — 纯文本格式，适合阅读
+
+💡 小贴士
+
+• 使用 Ctrl+Enter 快捷键快速转换
+• 转换后可直接在输出框编辑 YAML
+• 样例文本可快速体验功能
+• 所有处理在本地完成，AI 模式除外`;
+                input.dispatchEvent(new Event('input'));
+                if (typeof ScreenplayStudio !== 'undefined' && ScreenplayStudio.showToast) {
+                    ScreenplayStudio.showToast('📖 已加载使用指南', 'info');
+                }
+            }
+
+            // ---- 显示模板 ----
+            function showTemplate() {
+                const tmpl = `# 经典剧本模板
+# 你可以直接编辑这个模板，快速开始你的剧本创作
+
+- 场次: 1
+  场景: "开场 · 相遇"
+  地点: "城市公园"
+  时间: "午后"
+  内容:
+    - 类型: 描述
+      内容: "阳光透过树叶洒在长椅上，公园里人来人往"
+    - 类型: 动作
+      内容: "一个年轻女孩匆匆跑过，不小心撞到了路人"
+    - 类型: 对话
+      角色: "女孩"
+      台词: "对不起！真是太抱歉了，我没看路……"
+      情绪: 慌张
+    - 类型: 对话
+      角色: "男孩"
+      台词: "没关系，你没事吧？"
+      情绪: 温和
+    - 类型: 描述
+      内容: "男孩弯腰捡起散落一地的书本，递还给女孩"
+
+- 场次: 2
+  场景: "深入了解"
+  地点: "咖啡馆"
+  时间: "傍晚"
+  内容:
+    - 类型: 描述
+      内容: "咖啡馆里播放着轻柔的爵士乐，两人相对而坐"
+    - 类型: 对话
+      角色: "女孩"
+      台词: "谢谢你请我喝咖啡，今天真是……太尴尬了"
+      情绪: 不好意思
+    - 类型: 动作
+      内容: "男孩微笑着搅动杯中的咖啡"
+    - 类型: 对话
+      角色: "男孩"
+      台词: "我觉得挺幸运的，不然怎么会认识你呢？"
+      情绪: 轻松
+    - 类型: 描述
+      内容: "女孩的脸微微泛红，窗外的晚霞映在她脸上"`;
+
+                yamlOutput.value = tmpl;
+                yamlOutput.dispatchEvent(new Event('input'));
+                if (emptyState) emptyState.style.display = 'none';
+                $('outputStats').style.display = 'none';
+
+                if (typeof ScreenplayStudio !== 'undefined' && ScreenplayStudio.showToast) {
+                    ScreenplayStudio.showToast('📋 已加载剧本模板，可直接编辑修改', 'info');
+                }
+            }
+
+            // ---- 导航 logo 点击可中断加载 ----
+            document.querySelector('.nav-logo')?.addEventListener('click', function(e) {
+                const loading = $('loadingOverlay');
+                if (loading && loading.classList.contains('active')) {
+                    loading.classList.remove('active');
+                    const btn = $('convertBtn');
+                    if (btn) btn.disabled = false;
+                    if (typeof ScreenplayStudio !== 'undefined' && ScreenplayStudio.showToast) {
+                        ScreenplayStudio.showToast('⏹️ 已取消转换', 'warning');
+                    }
+                    e.preventDefault();
+                }
+            });
+
+            // ---- 对照模式 ----
+            function toggleCompareView() {
+                const compareView = $('compareView');
+                const yamlOutput = $('yamlOutput');
+                const emptyState = $('emptyState');
+                const scenePreview = $('scenePreview');
+                const outputStats = $('outputStats');
+
+                if (!compareView) return;
+
+                const isVisible = compareView.style.display !== 'none';
+                if (isVisible) {
+                    // 隐藏对照，恢复原有视图
+                    compareView.style.display = 'none';
+                    yamlOutput.style.display = '';
+                    if (emptyState) emptyState.style.display = yamlOutput.value.trim() ? 'none' : 'flex';
+                    scenePreview.style.display = '';
+                    outputStats.style.display = '';
+                } else {
+                    // 显示对照，隐藏其他
+                    compareView.style.display = 'flex';
+                    yamlOutput.style.display = 'none';
+                    emptyState.style.display = 'none';
+                    scenePreview.style.display = 'none';
+                    outputStats.style.display = 'none';
+
+                    // 生成对照内容
+                    if (typeof ScreenplayStudio !== 'undefined') {
+                        const st = ScreenplayStudio.getState();
+                        if (st.novelText && st.rawYaml) {
+                            ScreenplayStudio.generateCompareView && ScreenplayStudio.generateCompareView();
+                        }
+                    }
+                }
+            }
+
+            // 分隔线开关
+            $('sepToggle')?.addEventListener('change', function() {
+                if (typeof ScreenplayStudio !== 'undefined' && ScreenplayStudio.generateCompareView) {
+                    ScreenplayStudio.state.showSeparators = this.checked;
+                    ScreenplayStudio.generateCompareView();
+                }
+            });
+
+            // 隐藏对照视图
+            function hideCompareView() {
+                const compareView = $('compareView');
+                const yamlOutput = $('yamlOutput');
+                const emptyState = $('emptyState');
+                if (!compareView || compareView.style.display === 'none') return;
+                compareView.style.display = 'none';
+                yamlOutput.style.display = '';
+                if (emptyState) emptyState.style.display = yamlOutput.value.trim() ? 'none' : 'flex';
+                $('scenePreview').style.display = '';
+                $('outputStats').style.display = '';
+            }
+
+            // ---- 剧本展示 ----
+            function togglePresentView() {
+                const pv = $('presentationView');
+                const yamlOut = $('yamlOutput');
+                const emptySt = $('emptyState');
+                const scenePrev = $('scenePreview');
+                const outStats = $('outputStats');
+                const compareView = $('compareView');
+                const fm = $('fileManager');
+                if (!pv) return;
+                const vis = pv.style.display !== 'none';
+                if (vis) {
+                    pv.style.display = 'none';
+                    yamlOut.style.display = '';
+                    if (emptySt) emptySt.style.display = yamlOut.value.trim() ? 'none' : 'flex';
+                    scenePrev.style.display = '';
+                    outStats.style.display = '';
+                } else {
+                    pv.style.display = 'flex';
+                    yamlOut.style.display = 'none';
+                    emptySt.style.display = 'none';
+                    scenePrev.style.display = 'none';
+                    outStats.style.display = 'none';
+                    if (compareView) compareView.style.display = 'none';
+                    if (fm) fm.style.display = 'none';
+                }
+            }
+
+            // 打开展示按钮
+            $('openPresentationBtn')?.addEventListener('click', function() {
+                if (typeof ScreenplayStudio !== 'undefined' && ScreenplayStudio.openPresentation) {
+                    const st = ScreenplayStudio.getState();
+                    if ((!st.screenplay || st.screenplay.length === 0) && !st.rawYaml) {
+                        ScreenplayStudio.showToast && ScreenplayStudio.showToast('⚠️ 请先转换小说再打开展示', 'warning');
+                        return;
+                    }
+                    ScreenplayStudio.openPresentation();
+                }
+            });
+            // ---- 文件管理 ----
+            $('addNovelBtn')?.addEventListener('click', () => $('fileInput')?.click());
+            $('fileInput')?.addEventListener('change', function(e) {
+                const file = this.files && this.files[0];
+                if (file && typeof ScreenplayStudio !== 'undefined') {
+                    ScreenplayStudio.importNovelFile && ScreenplayStudio.importNovelFile(file);
+                }
+                this.value = '';
+            });
+
+            // 文件管理子导航
+            function toggleFileMgr() {
+                const fm = $('fileManager');
+                const yamlOut = $('yamlOutput');
+                const emptySt = $('emptyState');
+                const scenePrev = $('scenePreview');
+                const outStats = $('outputStats');
+                if (!fm) return;
+                const vis = fm.style.display !== 'none';
+                if (vis) {
+                    fm.style.display = 'none';
+                    yamlOut.style.display = '';
+                    if (emptySt) emptySt.style.display = yamlOut.value.trim() ? 'none' : 'flex';
+                    scenePrev.style.display = '';
+                    outStats.style.display = '';
+                } else {
+                    fm.style.display = 'flex';
+                    yamlOut.style.display = 'none';
+                    emptySt.style.display = 'none';
+                    scenePrev.style.display = 'none';
+                    outStats.style.display = 'none';
+                    if (typeof ScreenplayStudio !== 'undefined' && ScreenplayStudio.renderFileList) {
+                        ScreenplayStudio.renderFileList();
+                    }
+                }
+            }
+            window.toggleFileMgr = toggleFileMgr;
+
+            // ---- 字体大小 ----
+            $('fontSizeInput')?.addEventListener('input', function() {
+                const val = this.value;
+                $('fontSizeValue').textContent = val + 'px';
+                if (typeof ScreenplayStudio !== 'undefined') {
+                    ScreenplayStudio.state.compareFontSize = parseInt(val);
+                    localStorage.setItem('bili_font_size', val);
+                    ScreenplayStudio.applySettings && ScreenplayStudio.applySettings();
+                }
+            });
+
+            // ---- 字体选择 ----
+            $('fontFamilySelect')?.addEventListener('change', function() {
+                if (typeof ScreenplayStudio !== 'undefined') {
+                    ScreenplayStudio.state.compareFontFamily = this.value;
+                    localStorage.setItem('bili_font_family', this.value);
+                    ScreenplayStudio.applySettings && ScreenplayStudio.applySettings();
+                }
+            });
+
+            // ---- 主题 ----
+            document.querySelectorAll('.theme-option').forEach(opt => {
+                opt.addEventListener('click', function() {
+                    const theme = this.dataset.theme;
+                    if (typeof ScreenplayStudio !== 'undefined') {
+                        ScreenplayStudio.applyTheme && ScreenplayStudio.applyTheme(theme);
+                    }
+                });
+            });
+
+            // ---- 自动拆分 ----
+            $('autoSplitToggle')?.addEventListener('change', function() {
+                if (typeof ScreenplayStudio !== 'undefined') {
+                    ScreenplayStudio.state.autoSplitActs = this.checked;
+                    localStorage.setItem('bili_auto_split', this.checked);
+                }
+            });
+
+            // ---- 全屏对照 ----
+            $('fsCompareClose')?.addEventListener('click', function() {
+                if (typeof ScreenplayStudio !== 'undefined') {
+                    ScreenplayStudio.closeFullscreenCompare && ScreenplayStudio.closeFullscreenCompare();
+                }
+            });
+
+            // 全屏对照点击遮罩关闭
+            $('fullscreenCompare')?.addEventListener('click', function(e) {
+                if (e.target === this && typeof ScreenplayStudio !== 'undefined') {
+                    ScreenplayStudio.closeFullscreenCompare && ScreenplayStudio.closeFullscreenCompare();
+                }
+            });
+
+            // ---- 设置 Sheet 弹窗 ----
+            function openSettingsModal() { $('settingsModal')?.classList.add('active'); }
+            function closeSettingsModal() { $('settingsModal')?.classList.remove('active'); }
+            $('settingsModalClose')?.addEventListener('click', closeSettingsModal);
+            $('settingsModalDone')?.addEventListener('click', closeSettingsModal);
+            $('settingsModal')?.addEventListener('click', function(e) {
+                if (e.target === this) closeSettingsModal();
+            });
+
+            // ---- 角色管理函数 ----
+            function openCharMgr() {
+                // 从 ScreenplayStudio 获取角色数据
+                let characters = [];
+                let screenplay = [];
+
+                if (typeof ScreenplayStudio !== 'undefined') {
+                    const st = ScreenplayStudio.getState();
+                    characters = st.characters || [];
+                    screenplay = st.screenplay || [];
+
+                    // 如果 screenplay 为空，但 yamlOutput 有内容，尝试解析
+                    if (characters.length === 0 && yamlOutput.value.trim()) {
+                        try {
+                            const parsed = ScreenplayStudio.fromYaml(yamlOutput.value);
+                            // 从 YAML 提取角色
+                            const charNames = new Set();
+                            const lines = yamlOutput.value.split('\n');
+                            lines.forEach(l => {
+                                const match = l.trim().match(/^角色:\s*"(.+?)"/);
+                                if (match && match[1] !== '未知') charNames.add(match[1]);
+                            });
+                            characters = Array.from(charNames).map((name, i) => ({
+                                name,
+                                dialogueCount: 0,
+                                type: i === 0 ? '主角' : i < 3 ? '主要角色' : '配角',
+                            }));
+                            screenplay = parsed;
+                        } catch(e) {}
+                    }
+                }
+
+                if (characters.length === 0) {
+                    charMgrGrid.innerHTML = `
+                        <div class="char-mgr-empty" style="grid-column:1/-1">
+                            <div class="char-mgr-empty-icon">🎭</div>
+                            <div style="font-size:16px;font-weight:600;color:var(--text-secondary);margin-bottom:6px;">
+                                还没有识别到角色
+                            </div>
+                            <div style="font-size:13px;line-height:1.8;">
+                                请先在左侧输入小说内容，点击「开始转换」<br>
+                                系统会自动识别所有角色
+                            </div>
+                        </div>
+                    `;
+                    if (charMgrHint) charMgrHint.style.display = 'flex';
+                } else {
+                    if (charMgrHint) charMgrHint.style.display = 'none';
+
+                    // 收集角色的对话样本
+                    const charDialogues = {};
+                    characters.forEach(c => { charDialogues[c.name] = []; });
+
+                    const allContent = screenplay.flatMap(s => s.内容 || []);
+                    allContent.forEach(b => {
+                        if ((b.type === '对话' || b.类型 === '对话') && b.character) {
+                            const name = b.character;
+                            const text = b.content || b.台词 || '';
+                            if (charDialogues[name]) {
+                                charDialogues[name].push(text);
+                            }
+                        }
+                        if ((b.type === '对话' || b.类型 === '对话') && b.角色) {
+                            const name = b.角色;
+                            const text = b.台词 || b.content || '';
+                            if (charDialogues[name]) {
+                                charDialogues[name].push(text);
+                            }
+                        }
+                    });
+
+                    // 从 YAML 原文也提取一下
+                    if (yamlOutput.value.trim()) {
+                        const lines = yamlOutput.value.split('\n');
+                        let curChar = '';
+                        for (const line of lines) {
+                            const match = line.trim().match(/^角色:\s*"(.+?)"/);
+                            if (match) curChar = match[1];
+                            const lineMatch = line.trim().match(/^台词:\s*"(.+?)"/);
+                            if (lineMatch && curChar && charDialogues[curChar]) {
+                                charDialogues[curChar].push(lineMatch[1]);
+                            }
+                        }
+                    }
+
+                    charMgrGrid.innerHTML = characters.map((c, idx) => {
+                        const dialogues = (charDialogues[c.name] || []).slice(0, 3);
+                        const typeClass = c.type === '主角' ? 'main' : c.type === '主要角色' ? 'support' : 'extra';
+                        const colors = ['var(--bili-pink)', 'var(--bili-blue)', 'var(--bili-green)', 'var(--bili-purple)'];
+                        const avatarChar = c.name.charAt(0);
+
+                        return `
+                            <div class="char-mgr-card" data-char-idx="${idx}">
+                                <div class="char-mgr-card-top">
+                                    <div class="char-mgr-name">
+                                        <span style="width:32px;height:32px;border-radius:50%;
+                                            background:${colors[idx % colors.length]};
+                                            display:inline-flex;align-items:center;justify-content:center;
+                                            font-size:14px;font-weight:700;color:#fff;flex-shrink:0;">
+                                            ${avatarChar}
+                                        </span>
+                                        <input class="char-mgr-name-input" value="${c.name}" data-original="${c.name}">
+                                    </div>
+                                    <span class="char-mgr-type-badge ${typeClass}">${c.type}</span>
+                                </div>
+                                <div class="char-mgr-stats">
+                                    <div class="char-mgr-stat">
+                                        <span class="char-mgr-stat-value" style="color:${colors[idx % colors.length]}">${c.dialogueCount}</span>
+                                        <span class="char-mgr-stat-label">台词句数</span>
+                                    </div>
+                                    <div class="char-mgr-stat">
+                                        <span class="char-mgr-stat-value" style="color:var(--bili-blue)">${dialogues.length > 0 ? '有' : '无'}</span>
+                                        <span class="char-mgr-stat-label">对话样本</span>
+                                    </div>
+                                </div>
+                                <div style="margin-bottom:8px;">
+                                    <label style="font-size:12px;color:var(--text-tertiary);margin-bottom:4px;display:block;">角色类型</label>
+                                    <select class="char-mgr-type-select" data-idx="${idx}">
+                                        <option value="主角" ${c.type === '主角' ? 'selected' : ''}>⭐ 主角</option>
+                                        <option value="主要角色" ${c.type === '主要角色' ? 'selected' : ''}>🔷 主要角色</option>
+                                        <option value="配角" ${c.type === '配角' ? 'selected' : ''}>🔸 配角</option>
+                                    </select>
+                                </div>
+                                ${dialogues.length > 0 ? `
+                                    <div class="char-mgr-dialogues">
+                                        ${dialogues.map(d => `<div class="char-mgr-dialogues-item">💬 "${d.length > 30 ? d.substring(0, 30) + '…' : d}"</div>`).join('')}
+                                    </div>
+                                ` : ''}
+                            </div>
+                        `;
+                    }).join('');
+                }
+
+                charMgrModal.classList.add('active');
+            }
+
+            function closeCharMgr() {
+                charMgrModal.classList.remove('active');
+            }
+
+            // 保存角色管理更改
+            function saveCharMgr() {
+                if (typeof ScreenplayStudio === 'undefined') return;
+
+                const cards = charMgrGrid.querySelectorAll('.char-mgr-card');
+                const updates = [];
+
+                cards.forEach(card => {
+                    const nameInput = card.querySelector('.char-mgr-name-input');
+                    const typeSelect = card.querySelector('.char-mgr-type-select');
+                    if (nameInput && typeSelect) {
+                        const original = nameInput.dataset.original;
+                        const newName = nameInput.value.trim();
+                        const newType = typeSelect.value;
+                        if (newName) {
+                            updates.push({ original, newName, newType });
+                        }
+                    }
+                });
+
+                if (updates.length > 0) {
+                    const st = ScreenplayStudio.getState();
+                    // 更新角色列表中的名称和类型
+                    st.characters.forEach(c => {
+                        const update = updates.find(u => u.original === c.name);
+                        if (update) {
+                            c.name = update.newName;
+                            c.type = update.newType;
+                        }
+                    });
+
+                    // 更新 YAML 中的角色名称
+                    let yaml = yamlOutput.value;
+                    updates.forEach(u => {
+                        if (u.original !== u.newName) {
+                            const re1 = new RegExp(`角色: "${escapeRegex(u.original)}"`, 'g');
+                            yaml = yaml.replace(re1, `角色: "${u.newName}"`);
+                        }
+                    });
+                    yamlOutput.value = yaml;
+
+                    // 重新显示角色列表
+                    const charSection = $('charactersSection');
+                    const charTags = $('characterTags');
+                    if (charSection && charTags) {
+                        const typeClass = {
+                            '主角': 'character-tag-main',
+                            '主要角色': 'character-tag-support',
+                            '配角': 'character-tag-extra',
+                        };
+                        charTags.innerHTML = st.characters.map(c => {
+                            const cls = typeClass[c.type] || 'character-tag-extra';
+                            const count = c.dialogueCount > 0 ? `<span class="tag-count">${c.dialogueCount}句</span>` : '';
+                            return `<span class="character-tag ${cls}">${c.name}${count}</span>`;
+                        }).join('');
+                    }
+
+                    if (typeof ScreenplayStudio.showToast === 'function') {
+                        ScreenplayStudio.showToast('✅ 角色信息已更新', 'success');
+                    }
+                    updateCharBadge();
+                }
+
+                closeCharMgr();
+            }
+
+            function escapeRegex(str) {
+                return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            }
+
+            // ---- 角色计数徽章 ----
+            function updateCharBadge() {
+                const badge = $('charCountBadge');
+                if (!badge) return;
+                let count = 0;
+                if (typeof ScreenplayStudio !== 'undefined') {
+                    try {
+                        const st = ScreenplayStudio.getState();
+                        count = (st.characters || []).length;
+                    } catch(e) {}
+                }
+                if (count > 0) {
+                    badge.textContent = count;
+                    badge.style.display = 'inline';
+                } else {
+                    badge.style.display = 'none';
+                }
+            }
+            document.addEventListener('screenplayConverted', updateCharBadge);
+
+            // 角色管理事件绑定
+            $('charMgrClose')?.addEventListener('click', closeCharMgr);
+            $('charMgrCancel')?.addEventListener('click', closeCharMgr);
+            $('charMgrSave')?.addEventListener('click', saveCharMgr);
+            charMgrModal?.addEventListener('click', function(e) {
+                if (e.target === this) closeCharMgr();
+            });
+
+            // ---- 暴露公共函数 ----
+            window.openCharMgr = openCharMgr;
+
+            // ---- 初始化设置 ----
+            if (typeof ScreenplayStudio !== 'undefined') {
+                setTimeout(() => {
+                    ScreenplayStudio.applySettings && ScreenplayStudio.applySettings();
+                }, 100);
+            }
+
+            // ---- 键盘快捷键 ----
+            const THEME_LIST = ['minimal-white','soft-pastel','editorial-serif','tokyo-night','catppuccin-mocha','aurora','sunset-warm'];
+            let themeIdx = THEME_LIST.indexOf('minimal-white');
+            document.addEventListener('keydown', function(e) {
+                // T 键循环主题（不在输入框内时）
+                if (e.key === 't' || e.key === 'T') {
+                    const tag = e.target.tagName;
+                    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+                    e.preventDefault();
+                    themeIdx = (themeIdx + 1) % THEME_LIST.length;
+                    const next = THEME_LIST[themeIdx];
+                    if (typeof ScreenplayStudio !== 'undefined' && ScreenplayStudio.applyTheme) {
+                        ScreenplayStudio.applyTheme(next);
+                    }
+                }
+            });
+        })();
+    </script>
+
+</body>
+</html>
