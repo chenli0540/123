@@ -34,6 +34,46 @@ const ScreenplayStudio = (() => {
         chapterSplitMode: localStorage.getItem('chapter_split_mode') || 'marker',
         chapterMarkerPattern: localStorage.getItem('chapter_marker_pattern') || '第\\d+[章回节]',
         chapterSize: parseInt(localStorage.getItem('chapter_size') || '8000'),
+
+        // AI 提示词设置
+        aiSystemPrompt: localStorage.getItem('bili_ai_system_prompt') || '你是一个专业的剧本编剧助手，擅长将小说转化为剧本格式。只输出YAML，不要任何额外文字。',
+        aiUserPrompt: localStorage.getItem('bili_ai_user_prompt') || `你是一位专业的剧本编剧。请将以下小说文本转化为专业的剧本格式（YAML格式），包含场次划分、场景描述、角色对话（标注情绪）、动作描述。
+
+要求：
+1. 根据时间、地点变化合理划分场次
+2. 提取所有出现的人物角色
+3. 对话要标注说话人和情绪状态
+4. 包含场景描述和环境描写
+5. 动作描写单独标注
+
+输出格式必须是纯 YAML，格式如下：
+\`\`\`yaml
+- 场次: 1
+  场景: "场景标题"
+  地点: "地点"
+  时间: "时间"
+  内容:
+    - 类型: 描述
+      内容: "描述文字"
+    - 类型: 对话
+      角色: "角色名"
+      台词: "对话内容"
+      情绪: "情绪"
+    - 类型: 动作
+      内容: "动作描述"
+\`\`\`
+
+注意：
+- 不要输出任何解释性文字，只输出 YAML
+- YAML 必须格式正确，可以解析
+- 合理划分场次，每场要有明确的场景、地点、时间
+- 对话内容要完整保留原文
+
+以下是需要转换的小说文本：
+
+---
+{inputText}
+---`,
     };
 
     // ===== DOM 引用 =====
@@ -592,48 +632,12 @@ const ScreenplayStudio = (() => {
                 console.warn(`文本超长（${text.length} 字符），截断至 ${inputText.length} 字符`);
             }
 
-            const prompt = `你是一位专业的剧本编剧。请将以下小说文本转化为专业的剧本格式（YAML格式），包含场次划分、场景描述、角色对话（标注情绪）、动作描述。
-
-要求：
-1. 根据时间、地点变化合理划分场次
-2. 提取所有出现的人物角色
-3. 对话要标注说话人和情绪状态
-4. 包含场景描述和环境描写
-5. 动作描写单独标注
-
-输出格式必须是纯 YAML，格式如下：
-\`\`\`yaml
-- 场次: 1
-  场景: "场景标题"
-  地点: "地点"
-  时间: "时间"
-  内容:
-    - 类型: 描述
-      内容: "描述文字"
-    - 类型: 对话
-      角色: "角色名"
-      台词: "对话内容"
-      情绪: "情绪"
-    - 类型: 动作
-      内容: "动作描述"
-\`\`\`
-
-注意：
-- 不要输出任何解释性文字，只输出 YAML
-- YAML 必须格式正确，可以解析
-- 合理划分场次，每场要有明确的场景、地点、时间
-- 对话内容要完整保留原文
-
-以下是需要转换的小说文本：
-
----
-${inputText}
----`;
+            const prompt = state.aiUserPrompt.replace('{inputText}', inputText);
 
             const requestBody = {
                 model: model,
                 messages: [
-                    { role: 'system', content: '你是一个专业的剧本编剧助手，擅长将小说转化为剧本格式。只输出YAML，不要任何额外文字。' },
+                    { role: 'system', content: state.aiSystemPrompt },
                     { role: 'user', content: prompt }
                 ],
                 temperature: 0.3,
@@ -1288,6 +1292,13 @@ ${inputText}
             const sceneIdx = parseInt(line.dataset.scene);
             const blockIdx = parseInt(line.dataset.blockIndex);
             if (isNaN(sceneIdx) || isNaN(blockIdx)) return;
+
+            // 如果 screenplay 未填充，尝试从 rawYaml 恢复
+            if (!state.screenplay || state.screenplay.length === 0) {
+                if (state.rawYaml) {
+                    try { state.screenplay = ConversionEngine.fromYaml(state.rawYaml); } catch (e) { return; }
+                } else { return; }
+            }
             if (!state.screenplay[sceneIdx]) return;
             const blocks = state.screenplay[sceneIdx].内容;
             if (!blocks || !blocks[blockIdx]) return;

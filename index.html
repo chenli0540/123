@@ -152,6 +152,25 @@
                         <button class="btn btn-outline btn-sm" id="testApiBtn" type="button">🔌 测试连接</button>
                         <button class="btn btn-outline btn-sm" id="closeApiSettingsBtn" type="button">✕ 关闭</button>
                     </div>
+
+                    <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">
+                        <details style="font-size:13px;">
+                            <summary style="cursor:pointer;font-weight:600;color:var(--text-secondary);padding:4px 0;">🧠 AI 提示词设置</summary>
+                            <div style="margin-top:8px;">
+                                <div class="form-group" style="margin-bottom:10px;">
+                                    <label class="form-label">System Prompt <small>AI 角色设定</small></label>
+                                    <textarea class="form-input" id="aiSystemPromptInput" rows="3" style="font-size:12px;font-family:monospace;resize:vertical;"></textarea>
+                                </div>
+                                <div class="form-group" style="margin-bottom:6px;">
+                                    <label class="form-label">User Prompt <small>发给 AI 的指令（{inputText} 会被替换为小说内容）</small></label>
+                                    <textarea class="form-input" id="aiUserPromptInput" rows="6" style="font-size:12px;font-family:monospace;resize:vertical;"></textarea>
+                                </div>
+                                <div style="display:flex;gap:6px;">
+                                    <button class="btn btn-outline btn-sm" id="resetPromptBtn" type="button">↺ 恢复默认</button>
+                                </div>
+                            </div>
+                        </details>
+                    </div>
                 </div>
             </div>
         </div>
@@ -221,6 +240,7 @@
                     <div class="file-mgr-header">
                         <div class="file-mgr-title">📁 小说文库</div>
                         <div class="file-mgr-actions">
+                            <button class="btn btn-outline btn-sm" id="chapterSplitSettingsBtn" style="font-size:11px;">⚙️ 分章设置</button>
                             <button class="btn btn-pink btn-sm" id="addNovelBtn">📂 导入小说</button>
                         </div>
                     </div>
@@ -407,6 +427,55 @@
             </div>
             <div class="modal-footer">
                 <button class="btn btn-pink" id="settingsModalDone">✔ 完成</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== 分章设置面板 ===== -->
+    <div class="modal-overlay" id="chapterSplitModal">
+        <div class="modal" style="max-width:480px;">
+            <div class="modal-header">
+                <div class="modal-title">⚙️ 分章设置</div>
+                <button class="modal-close" id="chapterSplitClose">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">分章方式</label>
+                    <div style="display:flex;gap:12px;font-size:14px;">
+                        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
+                            <input type="radio" name="splitMode" value="marker" checked style="accent-color:var(--bili-pink);">
+                            按标记（正则匹配）
+                        </label>
+                        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
+                            <input type="radio" name="splitMode" value="size" style="accent-color:var(--bili-pink);">
+                            按字数
+                        </label>
+                    </div>
+                </div>
+                <div class="form-group" id="chapterMarkerGroup">
+                    <label class="form-label">标记正则表达式</label>
+                    <input type="text" class="form-input" id="chapterMarkerInput"
+                        placeholder="例如：第\d+[章回节] 或 ^\d{3,}"
+                        value="第\\d+[章回节]">
+                    <p style="font-size:11px;color:var(--text-tertiary);margin-top:4px;">
+                        默认匹配 "第1章"、"第2回" 等；也支持 "001"、"002"（使用 ^\d{3,}）
+                    </p>
+                </div>
+                <div class="form-group" id="chapterSizeGroup" style="display:none;">
+                    <label class="form-label">每章字数</label>
+                    <input type="number" class="form-input" id="chapterSizeInput"
+                        min="1000" max="50000" value="8000" style="width:120px;">
+                    <p style="font-size:11px;color:var(--text-tertiary);margin-top:4px;">
+                        每个章节大约包含的字数（在段落边界处截断）
+                    </p>
+                </div>
+                <div style="font-size:12px;color:var(--text-tertiary);margin-top:12px;padding:8px 12px;background:var(--bg-secondary);border-radius:6px;">
+                    💡 分章设置对「导入小说」功能生效。修改后需重新导入文件。
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" id="chapterSplitCancel">取消</button>
+                <button class="btn btn-pink" id="chapterSplitSave">保存设置</button>
             </div>
         </div>
     </div>
@@ -761,6 +830,70 @@
                 }
             });
 
+            // ---- 分章设置 ----
+            const chapterSplitModal = $('chapterSplitModal');
+            const chapterSplitBtn = $('chapterSplitSettingsBtn');
+            const chapterSplitClose = $('chapterSplitClose');
+            const chapterSplitCancel = $('chapterSplitCancel');
+            const chapterSplitSave = $('chapterSplitSave');
+
+            // 加载已有设置
+            function loadChapterSplitSettings() {
+                const mode = localStorage.getItem('chapter_split_mode') || 'marker';
+                const pattern = localStorage.getItem('chapter_marker_pattern') || '第\\d+[章回节]';
+                const size = localStorage.getItem('chapter_size') || '8000';
+
+                document.querySelectorAll('input[name="splitMode"]').forEach(r => {
+                    r.checked = r.value === mode;
+                });
+                $('chapterMarkerInput').value = pattern;
+                $('chapterSizeInput').value = size;
+
+                $('chapterMarkerGroup').style.display = mode === 'marker' ? '' : 'none';
+                $('chapterSizeGroup').style.display = mode === 'size' ? '' : 'none';
+            }
+
+            // 切换分章方式显示
+            document.querySelectorAll('input[name="splitMode"]').forEach(r => {
+                r.addEventListener('change', function() {
+                    $('chapterMarkerGroup').style.display = this.value === 'marker' ? '' : 'none';
+                    $('chapterSizeGroup').style.display = this.value === 'size' ? '' : 'none';
+                });
+            });
+
+            chapterSplitBtn?.addEventListener('click', function() {
+                loadChapterSplitSettings();
+                chapterSplitModal.classList.add('active');
+            });
+
+            function closeChapterSplitModal() { chapterSplitModal.classList.remove('active'); }
+            chapterSplitClose?.addEventListener('click', closeChapterSplitModal);
+            chapterSplitCancel?.addEventListener('click', closeChapterSplitModal);
+            chapterSplitModal?.addEventListener('click', function(e) {
+                if (e.target === this) closeChapterSplitModal();
+            });
+
+            chapterSplitSave?.addEventListener('click', function() {
+                const mode = document.querySelector('input[name="splitMode"]:checked')?.value || 'marker';
+                const pattern = $('chapterMarkerInput').value.trim() || '第\\d+[章回节]';
+                const size = parseInt($('chapterSizeInput').value) || 8000;
+
+                localStorage.setItem('chapter_split_mode', mode);
+                localStorage.setItem('chapter_marker_pattern', pattern);
+                localStorage.setItem('chapter_size', String(size));
+
+                if (typeof ScreenplayStudio !== 'undefined') {
+                    ScreenplayStudio.state.chapterSplitMode = mode;
+                    ScreenplayStudio.state.chapterMarkerPattern = pattern;
+                    ScreenplayStudio.state.chapterSize = size;
+                }
+
+                closeChapterSplitModal();
+                if (typeof ScreenplayStudio !== 'undefined' && ScreenplayStudio.showToast) {
+                    ScreenplayStudio.showToast('✅ 分章设置已保存', 'success');
+                }
+            });
+
             // ---- 全屏对照 ----
             $('fsCompareClose')?.addEventListener('click', function() {
                 if (typeof ScreenplayStudio !== 'undefined') {
@@ -1031,6 +1164,41 @@
                     ScreenplayStudio.applySettings && ScreenplayStudio.applySettings();
                 }, 100);
             }
+
+            // ---- AI 提示词设置 ----
+            const sysPromptInput = document.getElementById('aiSystemPromptInput');
+            const userPromptInput = document.getElementById('aiUserPromptInput');
+            const resetPromptBtn = document.getElementById('resetPromptBtn');
+
+            function loadPrompts() {
+                if (!sysPromptInput || !userPromptInput) return;
+                sysPromptInput.value = ScreenplayStudio.state.aiSystemPrompt || '';
+                userPromptInput.value = ScreenplayStudio.state.aiUserPrompt || '';
+            }
+
+            // 监听 API 面板打开
+            document.getElementById('apiSettingsBtn')?.addEventListener('click', function() {
+                setTimeout(loadPrompts, 50); // 等面板展开后再加载
+            });
+
+            sysPromptInput?.addEventListener('input', function() {
+                ScreenplayStudio.state.aiSystemPrompt = this.value;
+                localStorage.setItem('bili_ai_system_prompt', this.value);
+            });
+
+            userPromptInput?.addEventListener('input', function() {
+                ScreenplayStudio.state.aiUserPrompt = this.value;
+                localStorage.setItem('bili_ai_user_prompt', this.value);
+            });
+
+            resetPromptBtn?.addEventListener('click', function() {
+                localStorage.removeItem('bili_ai_system_prompt');
+                localStorage.removeItem('bili_ai_user_prompt');
+                ScreenplayStudio.state.aiSystemPrompt = null;
+                ScreenplayStudio.state.aiUserPrompt = null;
+                loadPrompts();
+                ScreenplayStudio.showToast && ScreenplayStudio.showToast('✅ 提示词已恢复默认', 'success');
+            });
 
             // ---- 键盘快捷键 ----
             const THEME_LIST = ['minimal-white','soft-pastel','editorial-serif','tokyo-night','catppuccin-mocha','aurora','sunset-warm'];
