@@ -53,7 +53,6 @@
         <div class="sub-nav-inner">
             <span class="sub-nav-item active" data-sub="convert">📄 智能转换</span>
             <span class="sub-nav-item" data-sub="chars">🎭 角色管理 <span class="new-badge" id="charCountBadge" style="display:none;background:var(--bili-blue);">0</span></span>
-            <span class="sub-nav-item" data-sub="stats">📊 剧本统计</span>
             <span class="sub-nav-item" data-sub="export">💾 导入/导出</span>
             <span class="sub-nav-item" data-sub="files">📁 文件管理</span>
             <span class="sub-nav-item" data-sub="compare">📑 对比模式</span>
@@ -257,6 +256,16 @@
                             <span class="file-stat-value" id="totalWordCount">0</span>
                             <span class="file-stat-label">总字数</span>
                         </div>
+                    </div>
+                    <div class="file-mgr-search">
+                        <span class="file-mgr-search-icon">🔍</span>
+                        <input type="text" id="chapterSearchInput" placeholder="搜索章节名称..." autocomplete="off">
+                        <button class="file-mgr-search-clear" id="chapterSearchClear">✕</button>
+                    </div>
+                    <div class="file-mgr-search-empty" id="chapterSearchEmpty">
+                        <div style="font-size:32px;margin-bottom:8px;opacity:0.5;">🔍</div>
+                        <div>未找到匹配的章节</div>
+                        <div style="font-size:12px;color:var(--text-tertiary);margin-top:4px;">试试其他关键词</div>
                     </div>
                     <div class="file-mgr-list" id="fileMgrList">
                         <div class="file-mgr-empty">
@@ -788,9 +797,48 @@
                     if (typeof ScreenplayStudio !== 'undefined' && ScreenplayStudio.renderFileList) {
                         ScreenplayStudio.renderFileList();
                     }
+                    // 打开时聚焦搜索框
+                    setTimeout(() => {
+                        const searchInput = document.getElementById('chapterSearchInput');
+                        if (searchInput) searchInput.focus();
+                    }, 100);
                 }
             }
             window.toggleFileMgr = toggleFileMgr;
+
+            // ---- 章节搜索 ----
+            const chapterSearchInput = document.getElementById('chapterSearchInput');
+            const chapterSearchClear = document.getElementById('chapterSearchClear');
+
+            if (chapterSearchInput) {
+                chapterSearchInput.addEventListener('input', function() {
+                    if (typeof ScreenplayStudio !== 'undefined' && ScreenplayStudio.renderFileList) {
+                        ScreenplayStudio.renderFileList();
+                    }
+                    if (chapterSearchClear) {
+                        chapterSearchClear.classList.toggle('visible', this.value.trim().length > 0);
+                    }
+                });
+                chapterSearchInput.addEventListener('keydown', function(e) {
+                    if (e.key === 'Escape') {
+                        this.value = '';
+                        this.dispatchEvent(new Event('input'));
+                        this.blur();
+                    }
+                });
+            }
+
+            if (chapterSearchClear) {
+                chapterSearchClear.addEventListener('click', function() {
+                    const input = document.getElementById('chapterSearchInput');
+                    if (input) {
+                        input.value = '';
+                        input.focus();
+                        input.dispatchEvent(new Event('input'));
+                    }
+                    this.classList.remove('visible');
+                });
+            }
 
             // ---- 字体大小 ----
             $('fontSizeInput')?.addEventListener('input', function() {
@@ -1172,8 +1220,10 @@
 
             function loadPrompts() {
                 if (!sysPromptInput || !userPromptInput) return;
-                sysPromptInput.value = ScreenplayStudio.state.aiSystemPrompt || '';
-                userPromptInput.value = ScreenplayStudio.state.aiUserPrompt || '';
+                const sysVal = ScreenplayStudio.state.aiSystemPrompt;
+                const userVal = ScreenplayStudio.state.aiUserPrompt;
+                sysPromptInput.value = (sysVal === null || sysVal === undefined) ? '' : sysVal;
+                userPromptInput.value = (userVal === null || userVal === undefined) ? '' : userVal;
             }
 
             // 监听 API 面板打开
@@ -1194,10 +1244,13 @@
             resetPromptBtn?.addEventListener('click', function() {
                 localStorage.removeItem('bili_ai_system_prompt');
                 localStorage.removeItem('bili_ai_user_prompt');
+                // 重新加载页面可完全恢复默认；此处先清空输入
                 ScreenplayStudio.state.aiSystemPrompt = null;
                 ScreenplayStudio.state.aiUserPrompt = null;
                 loadPrompts();
-                ScreenplayStudio.showToast && ScreenplayStudio.showToast('✅ 提示词已恢复默认', 'success');
+                if (typeof ScreenplayStudio.showToast === 'function') {
+                    ScreenplayStudio.showToast('✅ 提示词已恢复默认（刷新页面完全生效）', 'success');
+                }
             });
 
             // ---- 键盘快捷键 ----

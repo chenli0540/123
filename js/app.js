@@ -1586,6 +1586,8 @@ const ScreenplayStudio = (() => {
         renderFileList() {
             const list = document.getElementById('fileMgrList');
             const stats = document.getElementById('fileMgrStats');
+            const searchInput = document.getElementById('chapterSearchInput');
+            const searchEmpty = document.getElementById('chapterSearchEmpty');
             if (!list) return;
             const lib = state.novelLibrary;
 
@@ -1604,27 +1606,54 @@ const ScreenplayStudio = (() => {
                     <div>还没有小说，点击「导入小说」开始</div>
                     <div style="font-size:12px;color:var(--text-tertiary);margin-top:6px;">支持 .txt 格式，可多章管理</div>
                 </div>`;
+                if (searchInput) searchInput.value = '';
+                if (searchEmpty) searchEmpty.classList.remove('visible');
                 return;
             }
 
+            // 获取当前搜索关键词
+            const searchTerm = (searchInput ? searchInput.value.trim() : '').toLowerCase();
+
             list.innerHTML = lib.map((novel, ni) => {
                 const chaps = novel.chapters || [];
-                const chapHtml = chaps.length > 0 ? `<div class="novel-card-chapters">${
-                    chaps.map((ch, ci) => `
-                        <div class="chapter-item ${state.currentNovelId === novel.id && state.currentChapterId === ch.id ? 'active' : ''}"
-                             data-novel="${novel.id}" data-chapter="${ch.id}">
+                // 搜索过滤：如果有关键词，只显示匹配的章节
+                const filteredChaps = searchTerm
+                    ? chaps.filter(ch => (ch.title || '').toLowerCase().includes(searchTerm))
+                    : chaps;
+                const hasSearchMatch = searchTerm && filteredChaps.length > 0;
+                const autoExpand = hasSearchMatch; // 搜索匹配时自动展开
+
+                const chapHtml = chaps.length > 0 ? `<div class="novel-card-chapters ${autoExpand ? 'open' : ''}">${
+                    (searchTerm ? filteredChaps : chaps).map((ch, ci) => {
+                        const isActive = state.currentNovelId === novel.id && state.currentChapterId === ch.id;
+                        const isMatched = searchTerm && (ch.title || '').toLowerCase().includes(searchTerm);
+                        const matchClass = isMatched ? 'matched' : (searchTerm ? '' : '');
+                        return `<div class="chapter-item ${isActive ? 'active' : ''} ${matchClass}"
+                             data-novel="${novel.id}" data-chapter="${ch.id}"
+                             title="${(ch.title || '第' + (ci+1) + '章')} — ${(ch.content || '').length}字">
                             <span class="chapter-item-title">📄 ${ch.title || '第' + (ci+1) + '章'}</span>
                             <span class="chapter-item-stats">${(ch.content || '').length}字</span>
-                        </div>
-                    `).join('')
+                        </div>`;
+                    }).join('')
                 }</div>` : '';
 
-                return `<div class="novel-card">
+                // 搜索模式下，没有匹配章节的小说整体隐藏
+                if (searchTerm && !hasSearchMatch && chaps.length > 0) {
+                    return `<div class="novel-card" style="display:none;" data-novel-id="${novel.id}">
+                        ${chapHtml}
+                    </div>`;
+                }
+
+                return `<div class="novel-card" data-novel-id="${novel.id}">
                     <div class="novel-card-header">
                         <div class="novel-card-title">
                             📖 ${novel.name}
                             <span class="novel-card-chapter-badge">${chaps.length}章</span>
                         </div>
+                        ${chaps.length > 0 ? `<button class="novel-card-toggle" data-novel="${novel.id}" title="展开/折叠章节列表">
+                            <span class="toggle-arrow ${autoExpand ? 'open' : ''}">▶</span>
+                            <span>${autoExpand ? '折叠' : '展开'}</span>
+                        </button>` : ''}
                     </div>
                     <div class="novel-card-stats">
                         <span>📝 ${novel.totalWords || 0} 字</span>
@@ -1639,13 +1668,22 @@ const ScreenplayStudio = (() => {
                 </div>`;
             }).join('');
 
-            // 事件绑定
+            // 搜索空状态
+            if (searchTerm && searchEmpty) {
+                const hasAnyMatch = list.querySelector('.chapter-item.matched') !== null;
+                searchEmpty.classList.toggle('visible', !hasAnyMatch);
+            } else if (searchEmpty) {
+                searchEmpty.classList.remove('visible');
+            }
+
+            // 事件绑定：加载按钮
             list.querySelectorAll('.load-novel-btn').forEach(btn => {
                 btn.addEventListener('click', (e) => {
                     e.stopPropagation();
                     this.loadNovel(btn.dataset.novel);
                 });
             });
+            // 事件绑定：删除按钮
             list.querySelectorAll('.delete-novel-btn').forEach(btn => {
                 btn.addEventListener('click', (e) => {
                     e.stopPropagation();
@@ -1654,9 +1692,27 @@ const ScreenplayStudio = (() => {
                     }
                 });
             });
+            // 事件绑定：章节项
             list.querySelectorAll('.chapter-item').forEach(item => {
                 item.addEventListener('click', () => {
                     this.loadNovel(item.dataset.novel, item.dataset.chapter);
+                });
+            });
+            // 事件绑定：折叠/展开按钮
+            list.querySelectorAll('.novel-card-toggle').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const novelId = btn.dataset.novel;
+                    const card = btn.closest('.novel-card');
+                    if (!card) return;
+                    const chaptersEl = card.querySelector('.novel-card-chapters');
+                    const arrowEl = btn.querySelector('.toggle-arrow');
+                    const textEl = btn.querySelector('span:last-child');
+                    if (chaptersEl) {
+                        const isOpen = chaptersEl.classList.toggle('open');
+                        if (arrowEl) arrowEl.classList.toggle('open', isOpen);
+                        if (textEl) textEl.textContent = isOpen ? '折叠' : '展开';
+                    }
                 });
             });
         },

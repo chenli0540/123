@@ -1795,10 +1795,110 @@ body {
     margin-top: 4px;
 }
 
+/* 搜索栏 */
+.file-mgr-search {
+    margin-bottom: 10px;
+    position: relative;
+}
+.file-mgr-search input {
+    width: 100%;
+    padding: 8px 12px 8px 32px;
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-md);
+    background: var(--bg-input);
+    font-size: 13px;
+    outline: none;
+    transition: var(--transition);
+    box-sizing: border-box;
+}
+.file-mgr-search input:focus {
+    border-color: var(--bili-pink);
+    box-shadow: 0 0 0 2px rgba(251,114,153,0.15);
+}
+.file-mgr-search-icon {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 14px;
+    opacity: 0.5;
+    pointer-events: none;
+}
+.file-mgr-search-clear {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 14px;
+    cursor: pointer;
+    opacity: 0.4;
+    transition: var(--transition);
+    background: none;
+    border: none;
+    padding: 2px 4px;
+    display: none;
+}
+.file-mgr-search-clear:hover {
+    opacity: 0.8;
+}
+.file-mgr-search-clear.visible {
+    display: block;
+}
+.file-mgr-search-empty {
+    text-align: center;
+    padding: 30px 20px;
+    color: var(--text-tertiary);
+    font-size: 13px;
+    display: none;
+}
+.file-mgr-search-empty.visible {
+    display: block;
+}
+
 .novel-card-chapters {
     margin-top: 8px;
     padding-top: 8px;
     border-top: 1px solid var(--border-light);
+    display: none;
+}
+.novel-card-chapters.open {
+    display: block;
+}
+
+/* 章节折叠按钮 */
+.novel-card-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    color: var(--text-tertiary);
+    cursor: pointer;
+    background: none;
+    border: none;
+    padding: 2px 6px;
+    border-radius: var(--radius-sm);
+    transition: var(--transition);
+    user-select: none;
+}
+.novel-card-toggle:hover {
+    background: var(--bg-hover);
+    color: var(--text-secondary);
+}
+.novel-card-toggle .toggle-arrow {
+    transition: transform 0.2s ease;
+    display: inline-block;
+}
+.novel-card-toggle .toggle-arrow.open {
+    transform: rotate(90deg);
+}
+
+/* 章节搜索结果高亮 */
+.chapter-item.highlight {
+    background: var(--bili-pink-light);
+    border-left: 2px solid var(--bili-pink);
+}
+.chapter-item.matched {
+    display: flex !important;
 }
 
 .chapter-item {
