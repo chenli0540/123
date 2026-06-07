@@ -3,6 +3,7 @@
 > 小说转剧本 · AI 智能转换工具 · 纯前端 · 无需部署
 
 **剧本工坊** 是一款完全在浏览器本地运行的「小说 → 剧本」转换工具。粘贴小说原文，点击转换，即可自动生成结构化的剧本 YAML，支持场次划分、角色识别、对话提取、情绪标注。
+视频demo展示链接：【hr-qiniuyun】 https://www.bilibili.com/video/BV1SdEt6VEQz/?share_source=copy_web&vd_source=96faa0a435b0d444600388201098a2a7
 
 ---
 
